@@ -1,0 +1,30 @@
+{
+  "name": "@whiteboard/collaboration",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@hocuspocus/server": "^2.15.0",
+    "yjs": "^13.6.23",
+    "ws": "^8.18.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.3",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "@types/ws": "^8.5.14",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/pg": "^8.11.11",
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.3",
+    "vitest": "^3.0.7"
+  }
+}

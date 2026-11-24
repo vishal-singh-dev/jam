@@ -1,0 +1,10 @@
+{
+  "name": "@whiteboard/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+    "test": "pytest",
+    "lint": "ruff check src tests"
+  }
+}

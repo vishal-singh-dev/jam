@@ -1,0 +1,26 @@
+{
+  "name": "collaborative-whiteboard-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Real-time collaborative whiteboard monorepo",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run --prefix apps/api dev",
+    "dev:web": "npm run --prefix apps/web dev",
+    "dev:collab": "npm run --prefix apps/collaboration dev",
+    "test:api": "npm run --prefix apps/api test",
+    "test:web": "npm run --prefix apps/web test",
+    "test:collab": "npm run --prefix apps/collaboration test",
+    "lint:api": "npm run --prefix apps/api lint",
+    "lint:web": "npm run --prefix apps/web lint",
+    "lint:collab": "npm run --prefix apps/collaboration lint",
+    "compose:up": "docker compose up -d",
+    "compose:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

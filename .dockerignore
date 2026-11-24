@@ -1,0 +1,42 @@
+.git
+.gitignore
+.dockerignore
+README.md
+
+# Virtual environments & dependencies
+.venv/
+node_modules/
+.pnpm-store/
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+out/
+.next/
+.vite/
+*.tsbuildinfo
+
+# Local data & logs
+postgres_data/
+mailpit_data/
+redis_data/
+uploads/
+storage/
+logs/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example

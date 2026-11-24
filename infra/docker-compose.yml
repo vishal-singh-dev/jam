@@ -1,0 +1,54 @@
+# Infrastructure Docker Compose configuration
+# For convenience, root docker-compose.yml is also provided.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: whiteboard-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-whiteboard_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-whiteboard_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - whiteboard-network
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: whiteboard-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_WEB_PORT:-8025}:8025"
+    volumes:
+      - mailpit_data:/data
+    environment:
+      MP_DATA_FILE: /data/mailpit.db
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8025/api/v1/info || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - whiteboard-network
+
+volumes:
+  postgres_data:
+    name: whiteboard_postgres_data
+  mailpit_data:
+    name: whiteboard_mailpit_data
+
+networks:
+  whiteboard-network:
+    name: whiteboard_network
+    driver: bridge
