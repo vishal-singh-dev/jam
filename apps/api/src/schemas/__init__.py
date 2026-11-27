@@ -1,5 +1,15 @@
 """Pydantic schemas package."""
 
+from src.schemas.assets import (
+    AssetCompleteRequest,
+    AssetListResponse,
+    AssetResponse,
+    BoardAssetAttachRequest,
+    BoardAssetListResponse,
+    BoardAssetResponse,
+    UploadUrlRequest,
+    UploadUrlResponse,
+)
 from src.schemas.auth import (
     AuthResponse,
     ForgotPasswordRequest,
@@ -27,7 +37,13 @@ from src.schemas.errors import ErrorEnvelope, ErrorResponse
 from src.schemas.system import HealthResponse, ReadyResponse, VersionResponse
 
 __all__ = [
+    "AssetCompleteRequest",
+    "AssetListResponse",
+    "AssetResponse",
     "AuthResponse",
+    "BoardAssetAttachRequest",
+    "BoardAssetListResponse",
+    "BoardAssetResponse",
     "BoardCreateRequest",
     "BoardListResponse",
     "BoardMemberAddRequest",
@@ -48,6 +64,8 @@ __all__ = [
     "ResetPasswordRequest",
     "SignupRequest",
     "TransferOwnershipRequest",
+    "UploadUrlRequest",
+    "UploadUrlResponse",
     "UserResponse",
     "VerifyEmailRequest",
     "VersionResponse",

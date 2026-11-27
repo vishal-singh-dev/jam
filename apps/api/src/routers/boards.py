@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.assets.service import attach_asset_to_board, list_board_assets
 from src.auth.dependencies import get_current_user
 from src.authorization.dependencies import require_board_permission_dep
 from src.authorization.roles import BoardPermission
@@ -16,9 +17,16 @@ from src.boards.service import (
     transfer_ownership,
     update_board_title,
 )
+from src.config import Settings, get_settings
 from src.db.session import get_db
 from src.models.board import BoardMember
 from src.models.user import User
+from src.schemas.assets import (
+    AssetResponse,
+    BoardAssetAttachRequest,
+    BoardAssetListResponse,
+    BoardAssetResponse,
+)
 from src.schemas.auth import MessageResponse
 from src.schemas.boards import (
     BoardCreateRequest,
@@ -27,6 +35,7 @@ from src.schemas.boards import (
     BoardUpdateRequest,
     TransferOwnershipRequest,
 )
+from src.storage import StorageProvider, get_storage
 
 router = APIRouter(
     prefix="/boards",
@@ -208,3 +217,89 @@ async def transfer_board_ownership_endpoint(
         updated_at=board.updated_at,
         current_user_role="editor",
     )
+
+
+@router.post(
+    "/{board_id}/assets",
+    response_model=BoardAssetResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Attach an asset to a board",
+)
+async def attach_asset_to_board_endpoint(
+    board_id: uuid.UUID,
+    payload: BoardAssetAttachRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db)],
+    storage: Annotated[StorageProvider, Depends(get_storage)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    _: Annotated[
+        BoardMember,
+        Depends(require_board_permission_dep(BoardPermission.ATTACH_ASSETS)),
+    ],
+) -> BoardAssetResponse:
+    """Associate a ready asset with a board (editor or owner permission)."""
+    try:
+        assoc = await attach_asset_to_board(
+            session=session,
+            board_id=board_id,
+            asset_id=payload.asset_id,
+            added_by_user_id=current_user.id,
+        )
+        await session.commit()
+    except ValueError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    asset_resp = AssetResponse.model_validate(assoc.asset)
+    asset_resp.url = storage.generate_presigned_get_url(
+        assoc.asset.object_key,
+        expires_in=settings.r2_presigned_url_expire_seconds,
+    )
+    return BoardAssetResponse(
+        id=assoc.id,
+        board_id=assoc.board_id,
+        asset_id=assoc.asset_id,
+        added_by_user_id=assoc.added_by_user_id,
+        asset=asset_resp,
+        created_at=assoc.created_at,
+    )
+
+
+@router.get(
+    "/{board_id}/assets",
+    response_model=BoardAssetListResponse,
+    summary="List all assets attached to a board",
+)
+async def list_board_assets_endpoint(
+    board_id: uuid.UUID,
+    session: Annotated[AsyncSession, Depends(get_db)],
+    storage: Annotated[StorageProvider, Depends(get_storage)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    _: Annotated[
+        BoardMember,
+        Depends(require_board_permission_dep(BoardPermission.READ_BOARD)),
+    ],
+) -> BoardAssetListResponse:
+    """Retrieve all assets associated with a board (viewer, editor, owner)."""
+    assocs = await list_board_assets(session, board_id)
+    items: list[BoardAssetResponse] = []
+    for assoc in assocs:
+        asset_resp = AssetResponse.model_validate(assoc.asset)
+        asset_resp.url = storage.generate_presigned_get_url(
+            assoc.asset.object_key,
+            expires_in=settings.r2_presigned_url_expire_seconds,
+        )
+        items.append(
+            BoardAssetResponse(
+                id=assoc.id,
+                board_id=assoc.board_id,
+                asset_id=assoc.asset_id,
+                added_by_user_id=assoc.added_by_user_id,
+                asset=asset_resp,
+                created_at=assoc.created_at,
+            )
+        )
+    return BoardAssetListResponse(items=items, total=len(items))

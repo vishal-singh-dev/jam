@@ -4,6 +4,7 @@ import logging
 import uuid
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -79,7 +80,7 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     """Handle request validation errors with formatted details."""
     request_id = _get_request_id(request)
-    details = exc.errors()
+    details = jsonable_encoder(exc.errors())
 
     error_payload = ErrorResponse(
         error=ErrorEnvelope(
@@ -92,7 +93,7 @@ async def validation_exception_handler(
 
     return JSONResponse(
         status_code=HTTP_422_CODE,
-        content=error_payload.model_dump(),
+        content=error_payload.model_dump(mode="json"),
         headers={HEADER_REQUEST_ID: request_id},
     )
 

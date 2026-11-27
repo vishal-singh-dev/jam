@@ -90,6 +90,37 @@ class Settings(BaseSettings):
         description="Google OIDC redirect URI",
     )
 
+    # Cloudflare R2 Settings (Phase 5)
+    r2_account_id: str | None = Field(default=None, description="Cloudflare account ID for R2")
+    r2_access_key_id: str | None = Field(default=None, description="Cloudflare R2 Access Key ID")
+    r2_secret_access_key: str | None = Field(
+        default=None, description="Cloudflare R2 Secret Access Key"
+    )
+    r2_bucket_name: str = Field(
+        default="collaborative-whiteboard-assets",
+        description="Cloudflare R2 bucket name",
+    )
+    r2_public_url: str | None = Field(
+        default=None,
+        description="Optional public CDN/R2 URL for asset delivery",
+    )
+    r2_endpoint_url: str | None = Field(
+        default=None,
+        description="Custom S3 endpoint URL (e.g. for local test mocks)",
+    )
+    r2_presigned_url_expire_seconds: int = Field(
+        default=900,
+        description="Expiration time for presigned upload/download URLs in seconds",
+    )
+    asset_max_file_size_bytes: int = Field(
+        default=10 * 1024 * 1024,
+        description="Max size for standard image uploads (10 MB)",
+    )
+    asset_max_gif_size_bytes: int = Field(
+        default=15 * 1024 * 1024,
+        description="Max size for GIF uploads (15 MB)",
+    )
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def assemble_cors_origins(cls, value: Any) -> list[str]:

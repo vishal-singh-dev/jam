@@ -49,8 +49,10 @@ class Asset(Base, UUIDPrimaryKeyMixin):
         CheckConstraint("byte_size > 0", name="chk_assets_byte_size"),
         CheckConstraint("width IS NULL OR width > 0", name="chk_assets_width"),
         CheckConstraint("height IS NULL OR height > 0", name="chk_assets_height"),
+        CheckConstraint("status IN ('pending', 'ready', 'failed')", name="chk_assets_status"),
         Index("ix_assets_owner_id", "owner_id"),
         Index("ix_assets_media_type", "media_type"),
+        Index("ix_assets_owner_status", "owner_id", "status"),
     )
 
     owner_id: Mapped[uuid.UUID] = mapped_column(
@@ -73,6 +75,7 @@ class Asset(Base, UUIDPrimaryKeyMixin):
     height: Mapped[int | None] = mapped_column(Integer, nullable=True)
     checksum_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     is_animated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,

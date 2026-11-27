@@ -119,3 +119,31 @@ This document summarizes the system architecture and component boundaries establ
      - `POST /api/boards/{board_id}/members`: Add new editor/viewer by user ID or email (owner only; rejects duplicate memberships).
      - `PATCH /api/boards/{board_id}/members/{user_id}`: Update member role (owner only).
      - `DELETE /api/boards/{board_id}/members/{user_id}`: Remove member (owner or member self-removal).
+
+6. **Phase 5 (Cloudflare R2 Asset APIs & Media Lifecycle)**
+   - **Storage Abstraction Layer (`src/storage`)**:
+     - `StorageProvider`: Pluggable abstract interface with operations: `generate_presigned_put_url`, `generate_presigned_get_url`, `verify_object_exists`, `delete_object`.
+     - `CloudflareR2Storage`: Production AWS S3 / Cloudflare R2 client using `boto3` with SigV4 presigned URL generation and endpoint routing.
+     - `MockStorageProvider`: Deterministic in-memory storage provider used for offline testing and local development without cloud credentials.
+     - `get_storage`: Dependency factory providing either live R2 storage or mock storage based on runtime configuration.
+   - **Content Policy & Upload Security**:
+     - Supported media types: JPEG, PNG, WebP, animated GIF.
+     - SVG upload is strictly rejected (422) pending dedicated SVG sanitization.
+     - Size limits: 10 MiB for standard images, 15 MiB for animated GIFs.
+     - Server-controlled object keys: `assets/{owner_id}/{asset_id}/{safe_filename}` preventing client path traversal and naming collisions.
+   - **Two-Step Upload & Verification Lifecycle**:
+     - Step 1: `POST /api/assets/upload-url` validates file policy, registers an asset in `pending` state, and returns a time-limited presigned PUT URL for direct browser-to-R2 upload.
+     - Step 2: `POST /api/assets/{asset_id}/complete` queries storage provider to verify presence and byte size, captures optional dimensions / SHA-256 checksum, and transitions asset status to `ready`.
+   - **Access Control & Board Associations (`src/assets/service.py`)**:
+     - Owner isolation: Users can only list and delete their own assets.
+     - Safe deletion with referential protection: Deleting an asset verifies `ref_count == 0`; returns 409 Conflict if attached to any board.
+     - Board attachment: Attaching an asset (`POST /api/boards/{board_id}/assets`) enforces `ATTACH_ASSETS` board permission.
+     - Inherited access: Active board members (owners, editors, viewers) inherit read access to all assets attached to their boards.
+   - **API Endpoints**:
+     - `POST /api/assets/upload-url`: Request presigned PUT URL and server-controlled key.
+     - `POST /api/assets/{asset_id}/complete`: Verify upload against storage and mark ready.
+     - `GET /api/assets`: Paginated listing of caller's assets with optional `media_type` filter.
+     - `GET /api/assets/{asset_id}`: Retrieve asset metadata and fresh presigned/public download URL.
+     - `DELETE /api/assets/{asset_id}`: Safely delete asset from storage and database.
+     - `POST /api/boards/{board_id}/assets`: Associate asset with a board (requires `ATTACH_ASSETS` permission).
+     - `GET /api/boards/{board_id}/assets`: List all assets attached to a board.
